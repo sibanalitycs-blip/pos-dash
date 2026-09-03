@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ru" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Карточка точки</title>
+<style>
+:root{color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s1soft:#cde2fb; --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --up:#006300;
+  --tap:46px}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s1soft:#184f95; --up:#0ca30c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding:env(safe-area-inset-top) 0 calc(24px + env(safe-area-inset-bottom))}
+.wrap{max-width:720px;margin:0 auto;padding:14px}
+h1{font-size:18px;margin:0 0 2px}
+h2{font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+   color:var(--muted);margin:22px 0 8px}
+.sub{color:var(--ink2);font-size:13px;margin:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px}
+select,input{width:100%;height:var(--tap);padding:0 12px;font-size:16px;border-radius:11px;
+  border:1px solid var(--axis);background:var(--surface);color:var(--ink);font-family:inherit}
+input{padding:0 14px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 11px}
+.tile .lab{font-size:11.5px;color:var(--muted)}
+.tile .val{font-size:23px;font-weight:600;margin-top:2px;line-height:1.1}
+.tile .val small{font-size:12px;font-weight:500;color:var(--ink2)}
+.tile .cmp{font-size:11.5px;color:var(--ink2);margin-top:4px}
+.up{color:var(--up)}.down{color:var(--crit)}
+ul.list{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--grid)}
+ul.list li{border-bottom:1px solid var(--grid)}
+ul.list button{width:100%;min-height:var(--tap);display:block;text-align:left;background:none;
+  border:0;padding:10px 4px;font:inherit;color:var(--ink);cursor:pointer}
+ul.list .a{font-size:14px;line-height:1.3}
+ul.list .m{font-size:11.5px;color:var(--muted);margin-top:2px}
+.back{background:none;border:0;color:var(--s1);font:inherit;font-size:13px;padding:8px 0;cursor:pointer}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  padding:3px 9px;border-radius:999px;border:1px solid var(--border);color:var(--ink2)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+svg{display:block;width:100%;height:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:right;padding:7px 5px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.miss{color:var(--crit);font-weight:600}
+.empty{color:var(--muted);font-size:13px;padding:14px 0}
+.form{display:grid;gap:8px;margin-top:12px}
+.form label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.form label>select,.form label>input{margin-top:4px;font-weight:400;letter-spacing:0;text-transform:none}
+select:disabled,input:disabled{opacity:.55}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.tabs{display:flex;gap:6px;margin:12px 0 4px}
+.tabs button{flex:1;min-height:40px;border-radius:11px;border:1px solid var(--border);background:var(--surface);
+  color:var(--ink2);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.tabs button.on{background:var(--s1);color:#fff;border-color:var(--s1)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--grid);font-size:13px}
+.kv:last-child{border-bottom:0}.kv b{font-weight:600;text-align:right}
+.ok{color:var(--up)}.bad{color:var(--crit)}.warn{color:#b07a00}
+#refresh{min-height:36px;padding:0 12px;background:var(--surface);cursor:pointer;white-space:nowrap;
+  font-family:inherit;font-size:12px;font-weight:600;color:var(--s1);border-color:var(--s1)}
+#refresh:disabled{opacity:.6;cursor:default}
+</style>
+</head>
+<body>
+<main class="wrap" id="app"><p class="empty">Загружаю…</p></main>
+
+<script>
+const $=s=>document.querySelector(s);
+const nf=new Intl.NumberFormat('ru-RU');
+const f0=v=>v==null?'—':nf.format(Math.round(v));
+// на малых величинах (доля 0,6 %) округление до целых давало ось «1 / 1 / 0»
+const fauto=(v,max)=>v==null?'—':nf.format(max<10?Math.round(v*10)/10:Math.round(v));
+const pc=v=>v==null?'—':nf.format(Math.round(v*10)/10)+' %';
+const esc=s=>String(s??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+const shortAddr=(a,reg)=>{
+  let t=String(a||'').replace(/^\s*\d{6}\s*,?\s*/,'');          // почтовый индекс
+  if(reg) t=t.replace(new RegExp('^'+reg.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*,?\\s*','i'),'');
+  return t.trim()||a||'';
+};
+const dlab=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})(.*)$/.exec(s||'');return m?m[3]+'.'+m[2]+'.'+m[1]+m[4]:(s||'');};
+const dfull=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?m[3]+'.'+m[2]+'.'+m[1]:(s||'');};
+const wday=s=>{const d=new Date(s+'T00:00:00');return isNaN(d)?'':['вс','пн','вт','ср','чт','пт','сб'][d.getDay()];};
+const netLabel=n=>String(n||'').replace(/^[FRL]_/,'');
+const chan=n=>/^R_|^L_/.test(n||'')?'RL':'F';
+const mlab=m=>{const[y,mo]=m.split('-');return ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'][+mo-1]+' '+y.slice(2);};
+
+let META=null, COV=null, VIS=null, FILE=null, S={net:'',reg:'',q:'',code:''};
+let TAB='sales';
+const MFULL=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const mfull=m=>{const[y,mo]=(m||'').split('-');return mo?MFULL[+mo-1]+' '+y:'';};
+try{Object.assign(S, JSON.parse(localStorage.getItem('pos-state')||'{}'));}catch(e){}
+const save=()=>{try{localStorage.setItem('pos-state',JSON.stringify({net:S.net,reg:S.reg}));}catch(e){}};
+
+// coverage.json — покрытие проекта мерчандайзинга (сети и регионы плана месяца),
+// его пишет pos_build.py из экспорта Merchandising. Нет файла — списки полные.
+async function loadCov(){
+  try{const r=await fetch('pos_data/coverage.json?v='+Date.now(),{cache:'no-store'});
+      return r.ok?await r.json():null;}catch(e){return null;}
+}
+// visits/index.json — слой визитов мерчандайзеров (экспорт Merchandising через pos_build.py --visits)
+async function loadVis(){
+  try{const r=await fetch('pos_data/visits/index.json?v='+Date.now(),{cache:'no-store'});
+      return r.ok?await r.json():null;}catch(e){return null;}
+}
+async function boot(){
+  [META,COV,VIS]=await Promise.all([fetch('pos_data/meta.json?v='+Date.now()).then(r=>r.json()),loadCov(),loadVis()]);
+  // выбор из прошлого раза оставляем, только если он ещё есть в данных
+  if(!META.regions.includes(S.reg)){S.reg='';S.net='';}
+  if(S.reg&&!netsIn(S.reg).includes(S.net)) S.net='';
+  S.code='';
+  if(S.net&&S.reg){$('#app').innerHTML='<p class="empty">Загружаю точки…</p>';await loadFile();}
+  render();
+  pageSource(false).then(t=>{PAGE_SRC=t;});
+}
+
+/* ---------- кнопка «Обновить дашборд» ----------
+   Просьба владельца 05.09.2026: после публикации новых данных человек в поле
+   не должен закрывать страницу и открывать заново. Кнопка перечитывает meta.json
+   и файлы точек мимо кэша, состояние (сеть, регион, запрос) сохраняется.
+   Если изменилась сама страница (index.html), данных мало — перезагружаем её. */
+let PAGE_SRC=null;
+async function pageSource(fresh){
+  try{
+    const r=await fetch('index.html'+(fresh?'?v='+Date.now():''),{cache:fresh?'no-store':'default'});
+    return r.ok?await r.text():null;
+  }catch(e){return null;}
+}
+async function refresh(){
+  const btn=$('#refresh'); if(!btn||btn.disabled) return;
+  btn.disabled=true; btn.textContent='Проверяю…';
+  try{
+    const src=await pageSource(true);
+    if(PAGE_SRC&&src&&src!==PAGE_SRC){
+      btn.textContent='Страница обновилась, перезагружаю…';
+      location.reload(); return;
+    }
+    const was=META.built_at;
+    [META,COV,VIS]=await Promise.all([fetch('pos_data/meta.json?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()),loadCov(),loadVis()]);
+    if(S.reg&&!META.regions.includes(S.reg)){S.reg='';S.net='';}
+    if(S.reg&&!netsIn(S.reg).includes(S.net)) S.net='';
+    FILE=null; S.code='';
+    if(S.net&&S.reg){const l=$('#list'); if(l) l.innerHTML='<p class="empty">Загружаю точки…</p>'; await loadFile();}
+    save();
+    S.msg=META.built_at!==was?'Данные обновлены: было '+dlab(was)+', стало '+dlab(META.built_at)
+                               :'Новых данных нет, актуально на '+dlab(META.built_at);
+  }catch(e){
+    S.msg='Обновить не удалось: нет связи с сервером. Данные на '+dlab(META.built_at);
+  }
+  render();
+}
+// Город и область — одна поисковая зона: 195 точек лежат в «Московской обл»,
+// а по адресу стоят в Москве (и наоборот, то же с Петербургом). Стоя в магазине,
+// человек выбирает то, где он есть, а не то, что записано в справочнике.
+const PAIR={'Москва г':'Московская обл','Московская обл':'Москва г',
+            'Санкт-Петербург г':'Ленинградская обл','Ленинградская обл':'Санкт-Петербург г'};
+function filesFor(net,reg){
+  const regs=new Set([reg]); if(PAIR[reg]) regs.add(PAIR[reg]);
+  return Object.entries(META.files).filter(([k,v])=>v.net===net&&regs.has(v.reg)).map(([k])=>k);
+}
+function covOf(net){const c=COV&&COV.nets&&COV.nets[net];return c&&Object.keys(c).length?c:null;}
+function zone(reg){const z=new Set([reg]); if(PAIR[reg]) z.add(PAIR[reg]); return z;}
+// Порядок выбора с 08.09.2026 (владелец): регион → сеть → адрес.
+// Регионы проекта — те, где у какой-то сети есть точки плана; сети проекта в регионе —
+// те, у кого план есть в этом регионе или в его паре (Москва/МО, Петербург/Ленобласть).
+function projectRegions(){
+  if(!COV||!COV.nets) return new Set();
+  const out=new Set();
+  Object.values(COV.nets).forEach(d=>Object.keys(d).forEach(r=>{out.add(r); if(PAIR[r]) out.add(PAIR[r]);}));
+  return out;
+}
+function netsIn(reg){
+  const z=zone(reg);
+  return [...new Set(Object.values(META.files).filter(v=>z.has(v.reg)).map(v=>v.net))].sort((a,b)=>netLabel(a).localeCompare(netLabel(b)));
+}
+function inProjectHere(net,reg){
+  const c=covOf(net); if(!c) return false;
+  const z=zone(reg); return Object.keys(c).some(r=>z.has(r));
+}
+
+async function loadFile(){
+  const keys=filesFor(S.net,S.reg);
+  if(!keys.length){FILE=null;return;}
+  const parts=await Promise.all(keys.map(k=>fetch('pos_data/net/'+k+'.json?v='+encodeURIComponent(META.built_at)).then(r=>r.json())));
+  const vkeys=VIS&&VIS.files?keys.filter(k=>VIS.files[k]):[];
+  const vparts=await Promise.all(vkeys.map(k=>fetch('pos_data/visits/'+k+'.json?v='+encodeURIComponent(VIS.built_at))
+    .then(r=>r.ok?r.json():{pos:{}}).catch(()=>({pos:{}}))));
+  // регион мог быть разрезан по городам — склеиваем в один список
+  FILE={net:S.net,reg:S.reg,months:parts[0].months,skus:parts[0].skus,
+        avg:parts[0].avg,mver:parts[0].mver||'',pos:{}};
+  // у файлов разных регионов свои списки SKU — держим их при точке,
+  // иначе индексы матрицы поедут и «нет на полке» покажет чужие позиции
+  parts.forEach(p=>{
+    Object.entries(p.pos).forEach(([c,v])=>{FILE.pos[c]={...v,_skus:p.skus,_reg:p.reg,_avg:p.avg,_cls:p.cls||{}};});
+  });
+  FILE.skusOf=p=>p._skus||FILE.skus;
+  FILE.vis={}; vparts.forEach(p=>Object.assign(FILE.vis,p.pos||{}));
+  FILE.hasVis=vkeys.length>0;
+}
+
+/* ---------- экраны ---------- */
+function render(){
+  if(!META) return;
+  if(S.code&&FILE&&FILE.pos[S.code]) return screenCard();
+  S.code='';
+  return screenHome();
+}
+
+/* Главный экран — один на всё: сеть, регион, адрес и список точек.
+   Решение владельца 05.09.2026: адрес вводится там же, где выбираются сеть
+   и регион, и «назад» из карточки ведёт сюда же, а не на отдельный список. */
+function screenHome(){
+  const ready=!!(S.net&&S.reg&&FILE);
+  $('#app').innerHTML=`
+    <div class="hdr"><h1>Карточка точки</h1>
+      <button class="chip" id="refresh" title="Перечитать данные с сервера">↻ Обновить дашборд</button></div>
+    <p class="sub">Регион, сеть — и ищи точку по адресу или коду</p>
+    ${S.msg?`<p class="note" style="margin-top:6px">${esc(S.msg)}</p>`:''}
+    <div class="form">
+      <label>Регион<select id="reg"><option value="">— выбери регион —</option>
+        ${regOptions()}</select>${regNote()}</label>
+      <label>Сеть<select id="net" ${S.reg?'':'disabled'}>
+        <option value="">${S.reg?'— выбери сеть —':'сначала регион'}</option>
+        ${S.reg?netOptions():''}
+      </select>${netNote()}</label>
+      <label>Адрес<input id="q" placeholder="${ready?'улица, дом или код точки':'сначала регион и сеть'}"
+        inputmode="search" autocomplete="off" value="${esc(S.q||'')}" ${ready?'':'disabled'}></label>
+    </div>
+    <div id="list"></div>
+    <p class="note">Данные за ${mlab(META.months[0])} — ${mlab(META.months[META.months.length-1])}.
+      Обновлено ${dlab(META.built_at)}. Матрица Library от ${esc(dlab(META.matrix_version))}.</p>`;
+  renderList();
+  $('#refresh').onclick=refresh;
+  // смена региона или сети — новый поиск: запрос адреса сбрасывается (08.09.2026)
+  $('#reg').onchange=e=>{S.reg=e.target.value;S.net='';S.code='';S.msg='';S.q='';FILE=null;save();render();};
+  $('#net').onchange=async e=>{
+    S.net=e.target.value;S.code='';S.msg='';S.q='';FILE=null;save();
+    if(S.net){$('#list').innerHTML='<p class="empty">Загружаю точки…</p>';await loadFile();}
+    render();};
+  // перерисовываем только список: полная перерисовка сбрасывала курсор и клавиатуру
+  $('#q').oninput=e=>{S.q=e.target.value;renderList();};
+}
+const noteStyle='display:block;margin-top:4px;font-weight:400;text-transform:none;letter-spacing:0';
+function regOptions(){
+  const opt=r=>`<option value="${esc(r)}"${r===S.reg?' selected':''}>${esc(r)}</option>`;
+  const pr=projectRegions();
+  if(!pr.size) return META.regions.map(opt).join('');
+  const inP=META.regions.filter(r=>pr.has(r)), outP=META.regions.filter(r=>!pr.has(r));
+  return `<optgroup label="Регионы проекта мерчандайзинга">${inP.map(opt).join('')}</optgroup>`+
+         (outP.length?`<optgroup label="Остальные регионы">${outP.map(opt).join('')}</optgroup>`:'');
+}
+function regNote(){
+  const pr=projectRegions(); if(!pr.size) return '';
+  const n=META.regions.filter(r=>pr.has(r)).length;
+  return `<span class="cmp" style="${noteStyle}">${n} ${n===1?'регион':n<5?'региона':'регионов'} проекта${COV.month?', план на '+esc(mfull(COV.month)):''} · всего с продажами ${META.regions.length}</span>`;
+}
+function netOptions(){
+  const opt=n=>`<option value="${esc(n)}"${n===S.net?' selected':''}>${esc(netLabel(n))}</option>`;
+  const all=netsIn(S.reg);
+  const inP=all.filter(n=>inProjectHere(n,S.reg));
+  const fed=all.filter(n=>!inProjectHere(n,S.reg)&&chan(n)==='F');
+  const loc=all.filter(n=>!inProjectHere(n,S.reg)&&chan(n)==='RL');
+  const g=(label,arr)=>arr.length?`<optgroup label="${label}">${arr.map(opt).join('')}</optgroup>`:'';
+  if(!COV||!COV.nets) return g('Федеральные сети',all.filter(n=>chan(n)==='F'))+g('Региональные и локальные сети',all.filter(n=>chan(n)==='RL'));
+  return g('В проекте мерчандайзинга',inP)+g('Федеральные сети вне проекта',fed)+g('Региональные и локальные сети',loc);
+}
+function netNote(){
+  if(!S.reg) return '';
+  const all=netsIn(S.reg), inP=all.filter(n=>inProjectHere(n,S.reg)).length;
+  const loc=all.filter(n=>chan(n)==='RL').length;
+  return `<span class="cmp" style="${noteStyle}">${COV&&COV.nets?`сетей проекта ${inP} · `:''}всего с продажами ${all.length}${loc?` (региональных и локальных ${loc})`:''}</span>`;
+}
+
+function renderList(){
+  const box=$('#list'); if(!box) return;
+  if(!(S.net&&S.reg&&FILE)){box.innerHTML='';return;}
+  const q=(S.q||'').toLowerCase().trim();
+  const all=Object.entries(FILE.pos);
+  const found=q?all.filter(([c,p])=>((p.a||'')+' '+(p.ct||'')+' '+c).toLowerCase().includes(q)):all;
+  const rows=found
+    .sort((a,b)=>(a[1].ct||'').localeCompare(b[1].ct||'')||(a[1].a||'').localeCompare(b[1].a||''))
+    .slice(0,300);
+  box.innerHTML=`
+    <p class="sub" style="margin-top:12px">${esc(netLabel(S.net))} · ${esc(S.reg)}${PAIR[S.reg]?' и '+esc(PAIR[S.reg]):''} ·
+      ${f0(all.length)} точек с продажами${q?' · по запросу '+f0(found.length):''}</p>
+    ${rows.length?`<ul class="list">${rows.map(([c,p])=>`
+      <li><button data-c="${esc(c)}">
+        <div class="a">${esc(shortAddr(p.a,S.reg)||'адрес не указан')}</div>
+        <div class="m">${esc(p.ct||'')}${p.ct?' · ':''}код ${esc(c)}</div>
+      </button></li>`).join('')}</ul>
+      ${found.length>rows.length?`<p class="note">Показаны первые ${rows.length}. Уточни запрос.</p>`:''}`
+     :`<p class="empty">Ничего не нашлось. Попробуй часть названия улицы.</p>`}`;
+  box.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    S.scroll=window.scrollY;S.code=b.dataset.c;S.msg='';TAB='sales';render();window.scrollTo(0,0);});
+}
+
+/* ---------- карточка точки ---------- */
+function series(p){
+  const M=FILE.months, out=M.map(()=>null);
+  // qc = -1: сеть выгружает только продажи KT&G (X5 с марта 2026) — категории и доли нет
+  p.m.forEach(([mi,qc,qk,sk,ns])=>{out[mi]={qc:qc<0?null:qc,qk,sk,ns,unk:qc<0,share:qc>0?qk/qc*100:null};});
+  return out;
+}
+function lastCell(ser){
+  for(let i=ser.length-1;i>=0;i--) if(ser[i]) return {i,v:ser[i]};
+  return null;
+}
+function chart2(ser){
+  /* Столбцы — категория в пачках (левая ось), линия — доля KT&G в % (правая ось).
+     Владелец 05.09.2026: один график вместо трёх переключаемых. */
+  const M=FILE.months, W=640,H=190,L=46,R=46,T=18,B=26;
+  // если хоть в одном месяце категории нет (сеть даёт только KT&G) — столбцы по продажам KT&G,
+  // иначе половина месяцев осталась бы пустой; доля рисуется там, где категория известна
+  const ktgMode=ser.some(c=>c&&c.unk);
+  const qc=ser.map(c=>c?(ktgMode?c.qk:c.qc):null), sh=ser.map(c=>c?c.share:null);
+  const haveQ=qc.filter(v=>v!=null), haveS=sh.filter(v=>v!=null);
+  if(haveQ.length<2) return '<p class="empty">Для графика нужно минимум два месяца с данными.</p>';
+  const maxQ=Math.max(...haveQ)*1.15||1, maxS=(haveS.length?Math.max(...haveS):1)*1.15||1;
+  const n=M.length, step=(W-L-R)/n, x=i=>L+step*(i+0.5), bw=Math.min(22,step*0.62);
+  const yQ=v=>T+(H-T-B)*(1-v/maxQ), yS=v=>T+(H-T-B)*(1-v/maxS);
+  let g='';
+  [0,0.5,1].forEach(f=>{const yy=yQ(maxQ*f);
+    g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/>`+
+       `<text x="${L-6}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${fauto(maxQ*f,maxQ)}</text>`+
+       `<text x="${W-R+6}" y="${yy+4}" text-anchor="start" font-size="10.5" fill="var(--s1)">${fauto(maxS*f,maxS)}%</text>`;});
+  qc.forEach((v,i)=>{if(v==null)return;
+    g+=`<rect x="${x(i)-bw/2}" y="${yQ(v)}" width="${bw}" height="${Math.max(0,H-B-yQ(v))}" rx="2" fill="var(--axis)"/>`;});
+  let d='',last=null;
+  sh.forEach((v,i)=>{if(v==null)return; d+=(d?' L':'M')+x(i)+' '+yS(v); last=[x(i),yS(v),v];});
+  if(d) g+=`<path d="${d}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  sh.forEach((v,i)=>{if(v==null)return;
+    g+=`<circle cx="${x(i)}" cy="${yS(v)}" r="3.4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>`;});
+  M.forEach((m,i)=>{if(i%3===0||i===n-1)
+    g+=`<text x="${x(i)}" y="${H-9}" text-anchor="middle" font-size="10" fill="var(--muted)">${mlab(m).split(' ')[0]}</text>`;});
+  // подписи последних значений: доля — над точкой, категория — над столбцом;
+  // если они сходятся ближе 18 px, подпись столбца уходит внутрь него
+  const li=qc.length-1-[...qc].reverse().findIndex(v=>v!=null);
+  if(last) g+=`<text x="${last[0]}" y="${last[1]-10}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--s1)">${pc(last[2])}</text>`;
+  if(qc[li]!=null){const yb=yQ(qc[li]), clash=last&&Math.abs(x(li)-last[0])<40&&Math.abs(yb-last[1])<18;
+    g+=`<text x="${x(li)}" y="${clash?yb+13:yb-5}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink2)">${f0(qc[li])}</text>`;}
+  return `<div class="row" style="gap:12px;margin-bottom:6px;font-size:12px;color:var(--ink2)">
+      <span><span class="dot" style="background:var(--axis);border-radius:3px"></span> ${ktgMode?'Продажи KT&G, пачек':'Категория, пачек'}</span>
+      <span><span class="dot" style="background:var(--s1)"></span> Доля KT&G, %${ktgMode&&haveS.length?' (где есть категория)':''}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
+
+function screenCard(){
+  const c=S.code, p=FILE.pos[c], ser=series(p), L=lastCell(ser);
+  const skus=FILE.skusOf?FILE.skusOf(p):FILE.skus;
+  const avg=p._avg||FILE.avg||{};
+  const v=L?L.v:null, mlast=L?FILE.months[L.i]:null;
+  const share=v&&v.qc>0?v.qk/v.qc*100:null;
+  const unk=!!(v&&v.unk);
+  const dShare=share!=null&&avg.share!=null?share-avg.share:null;
+  const need=(p.need||[]).length;
+  const vrec=(FILE.vis||{})[c];
+  $('#app').innerHTML=`
+    <button class="back" id="back">‹ к поиску точки</button>
+    <h1>${esc(shortAddr(p.a,p._reg||S.reg)||'адрес не указан')}</h1>
+    <p class="sub">${esc(netLabel(S.net))}${p.ct&&p.ct!==(p._reg||S.reg)?' · '+esc(p.ct):''} · ${esc(p._reg||S.reg)} · код ${c}</p>
+    ${classBlock(p, L)}
+    <div class="tabs">
+      <button data-tab="sales" class="${TAB==='sales'?'on':''}">Продажи</button>
+      <button data-tab="visit" class="${TAB==='visit'?'on':''}">Визит${vrec&&vrec.d?' · '+dfull(vrec.d).slice(0,5):''}</button>
+    </div>
+    ${TAB==='visit'?visitTab(vrec):`
+    <h2>${mlast?mlab(mlast):'последний месяц'}</h2>
+    <div class="grid">
+      <div class="tile"><div class="lab">Категория</div>
+        <div class="val">${unk?'—':f0(v&&v.qc)}${unk?'':'<small> пачек</small>'}</div>
+        <div class="cmp">${unk?'сеть выгружает только продажи KT&G':(avg.qc!=null?`средняя точка ${f0(avg.qc)}`:'')}</div></div>
+      <div class="tile"><div class="lab">Продажи KT&G</div>
+        <div class="val">${f0(v&&v.qk)}<small> пачек</small></div>
+        <div class="cmp">${avg.qk!=null?`средняя точка ${f0(avg.qk)}`:''}</div></div>
+      <div class="tile"><div class="lab">Доля KT&G</div>
+        <div class="val">${pc(share)}</div>
+        <div class="cmp">${unk?'без категории долю не посчитать':avg.share!=null?`по сети в регионе ${pc(avg.share)}
+          ${dShare!=null?`<span class="${dShare>=0?'up':'down'}">${dShare>=0?'+':''}${nf.format(Math.round(dShare*10)/10)} п.п.</span>`:''}`:'сравнить не с чем'}</div></div>
+      <div class="tile"><div class="lab">SKU KT&G с продажей</div>
+        <div class="val">${f0(v&&v.ns)}${need?`<small> из ${need} по матрице</small>`:''}</div>
+        <div class="cmp">${need?(v&&v.ns>=need?'<span class="up">вся матрица продаётся</span>':`<span class="miss">нет ${Math.max(0,need-(v?v.ns:0))} позиций</span>`):'матрицы по точке нет'}</div></div>
+    </div>
+
+    <h2>Динамика, ${FILE.months.length} мес.</h2>
+    <div class="card" id="ch"></div>
+
+    <h2>Матрица${FILE.mver?' · с '+esc(FILE.mver.replace(/^(\d{4})\.(\d{2})$/,'$2.$1')):' · '+esc(META.matrix_version)}</h2>
+    <div class="card">${matrixBlock(p,skus,need)}</div>
+
+    <p class="note">Данные отдела аналитики KT&G, обновлено ${dlab(META.built_at)}.
+      Продажи месячные: свежий месяц появляется после выгрузки сети.</p>`}`;
+  $('#back').onclick=()=>{S.code='';render();window.scrollTo(0,S.scroll||0);};
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;screenCard();});
+  if(TAB==='sales') $('#ch').innerHTML=chart2(ser);
+}
+
+/* ---------- класс точки (владелец 11.09.2026: два показателя, в самом верху карточки) ----------
+   Volume Class — адресная программа KT&G (лист «АП»; шкала листа «Принципы»: класс по
+   пачкам категории в день, 1 — от 1100, 10 — до 30); точки вне АП — оценка pos_build по той же
+   шкале от продаж категории куба за окно. Класс премиальности — по PPI витрины FKA
+   (Σ доля ценового сегмента × ранг: PREMIUM 5 … VFM 1) за 3 свежих месяца окна, имя сегмента
+   по округлённому PPI. Блок стоит над вкладками: это паспорт точки, а не показатель месяца. */
+const PSEG=['VFM','MID-LOW','MID-HIGH','HIGH','PREMIUM'];      // индекс = ранг − 1
+const f2=v=>v==null?'—':nf.format(Math.round(v*100)/100);
+const per=s=>{const m=/^(\d{4})-(\d{2})$/.exec(s||'');return m?['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'][+m[2]-1]:'';};
+const span=(a,b)=>a&&b?(a===b?per(a)+' '+a.slice(2,4):per(a)+'–'+per(b)+' '+b.slice(2,4)):'';
+function classBlock(p,L){
+  const M=FILE.months, sm=META.seg_months||[];
+  const v=L?L.v:null, unk=!!(v&&v.unk);
+  const vc=p.vc, pp=p.pp, rk=pp?Math.max(1,Math.min(5,Math.round(pp[0]))):0;
+  const inWin=p.lm!=null&&p.lm>=M.length-3;
+  return `
+    <h2>Класс точки</h2>
+    <div class="grid">
+      <div class="tile"><div class="lab">Volume Class</div>
+        <div class="val">${vc?vc[0]:'—'}</div>
+        <div class="cmp">${vc?(vc[1]?'по адресной программе':'оценка по продажам куба'):(unk?'точки нет в АП, категория не выгружается':'точки нет в АП')}</div></div>
+      <div class="tile"><div class="lab">Класс премиальности</div>
+        <div class="val">${pp?PSEG[rk-1]:'—'}</div>
+        <div class="cmp">${pp?`PPI ${f2(pp[0])} · ${esc(span(sm[0],sm[sm.length-1]))}`:unk?'категория не выгружается':inWin?'мало продаж за 3 мес.':'продаж за 3 мес. нет'}</div></div>
+    </div>
+`;
+}
+
+/* Матрица списком: позиции матрицы и продажи по ним за три последних месяца окна,
+   четвёртая колонка — разница последнего месяца точки к предыдущему (владелец 11.09.2026).
+   «Продаётся / нет» и Δ считаются по последнему месяцу, за который у точки есть данные;
+   месяц без данных у точки показывается прочерком, а не нулём. */
+function matrixBlock(p,skus,need){
+  const M=FILE.months, n=M.length, base=n-3, lm=p.lm;
+  const inWin=lm!=null&&lm>=base;
+  const has=new Set((p.m||[]).map(r=>r[0]));
+  const q={}; (p.sq||[]).forEach(([i,a,b,c])=>{q[i]=[a||0,b||0,c||0];});
+  const needI=p.need||[], soldOut=Object.keys(q).map(Number).filter(i=>!needI.includes(i)&&q[i].some(v=>v>0));
+  const kL=inWin?lm-base:-1, kP=kL-1;
+  const hasP=kP>=0&&has.has(base+kP);
+  const sold=inWin?needI.filter(i=>(q[i]||[0,0,0])[kL]>0).length:0;
+  const mon=lm!=null?mlab(M[lm]):'';
+  const head=need?`<div class="cmp" style="font-size:13px;margin-bottom:8px">Положено <b>${need}</b> ·
+      ${inWin?`продаётся <b>${sold}</b> · <span class="${need-sold?'miss':''}">нет ${need-sold}</span> · ${esc(mon)}`:'продажи по позициям за '+esc(mon)+' недоступны'}</div>`
+    :'<div class="cmp" style="margin-bottom:8px">Эта точка не входит в матрицу сети.</div>';
+  const cell=(i,k)=>!has.has(base+k)?'<span style="color:var(--muted)">—</span>':((q[i]||[0,0,0])[k]>0?f0(q[i][k]):'<span class="miss">нет</span>');
+  const delta=i=>{
+    if(!inWin||!hasP) return '<span style="color:var(--muted)">—</span>';
+    const v=q[i]||[0,0,0], d=v[kL]-v[kP];
+    return d===0?'0':d>0?`<span class="up">+${f0(d)}</span>`:`<span class="down">−${f0(-d)}</span>`;
+  };
+  const row=i=>`<tr><td>${esc(skus[i])}</td><td>${cell(i,0)}</td><td>${cell(i,1)}</td><td>${cell(i,2)}</td><td>${delta(i)}</td></tr>`;
+  const rows=needI.map(row)
+    .concat(soldOut.length?[`<tr><td colspan="5" style="color:var(--muted);font-size:11px;text-transform:uppercase;padding-top:10px">Продаётся вне матрицы</td></tr>`]
+      .concat(soldOut.map(row)):[]);
+  const th=`<tr><th>Позиция</th>${[0,1,2].map(k=>`<th>${esc(mlab(M[base+k]).split(' ')[0])}</th>`).join('')}<th title="к предыдущему месяцу">Δ</th></tr>`;
+  const note=inWin?`<p class="note">Пачек по месяцам; Δ — ${esc(mon)} к предыдущему месяцу${hasP?'':' (предыдущего месяца у точки нет)'}.</p>`
+    :`<p class="note">Продажи по позициям хранятся за последние 3 месяца (${esc(mlab(M[base]))} — ${esc(mlab(M[n-1]))}); последний месяц с продажами у точки — ${esc(mon)}.</p>`;
+  return head+(rows.length?`<table>${th}${rows.join('')}</table>`:'')+note;
+}
+
+/* ---------- вкладка «Визит» ----------
+   Последний визит мерчандайзера и его KPI по договору. Признаки визита считает
+   KPI-агент проекта мерчандайзинга (Merchandising), сюда они приходят готовыми
+   через pos_build.py --visits; страница ничего не пересчитывает. */
+const REASON_OK={'Стандарт':'ok','Группинг':'ok','не достигнута':'bad'};
+function pct(v){return v==null?'—':nf.format(Math.round(v*100))+' %';}
+function yesno(v){return v==null?'—':v?'<span class="ok">да</span>':'<span class="bad">нет</span>';}
+function visitTab(v){
+  const months=(VIS&&VIS.months)||[];
+  const per=months.length?(months.length===1?mfull(months[0]):mfull(months[0]).split(' ')[0]+' — '+mfull(months[months.length-1])):'';
+  const planLine=v&&v.pl?`В плане на ${esc(mfull(v.pm||''))}: <b>${f0(v.pn)}</b> ${v.pn===1?'визит':v.pn<5?'визита':'визитов'}${v.pr?', маршрут '+esc(v.pr):''}.`
+                        :`В плане мерчандайзинга на ${esc(mfull((VIS&&VIS.plan_month)||''))} точки нет.`;
+  if(!FILE.hasVis) return `<div class="card" style="margin-top:12px"><p class="empty">Данных о визитах по этой сети и региону нет.</p></div>`;
+  if(!v||!v.d) return `<div class="card" style="margin-top:12px">
+      <p class="empty">Визитов${per?' за '+esc(per):''} не было.</p>
+      <p class="cmp" style="font-size:13px">${planLine}</p></div>`;
+  const slCls=v.sl==null?'':v.sl>=0.92?'ok':v.sl>=0.8?'warn':'bad';
+  const avCls=v.av==null?'':v.av>=0.98?'ok':v.av>=0.96?'warn':'bad';
+  const stockCmp=v.slk===0?'сток этой сети в KPI не входит':
+    v.sl==null?(v.eff?'по ТСД пусто — делить не на что':'считается только по эффективному визиту')
+    :`${f0(v.so)} из ${f0(v.tsd)} пачек по ТСД · норма 92 %+`;
+  const avCmp=v.av==null?(v.eff?'по ТСД нет SKU матрицы':'считается только по эффективному визиту')
+    :`${f0(v.sout)} из ${f0(v.stsd)} SKU по матрице · норма 98 %+`;
+  const hist=(v.h||[]).map(h=>`<div class="kv"><span>${dfull(h[0])} <span style="color:var(--muted)">${wday(h[0])}</span></span>
+      <b class="${h[1]?'ok':'bad'}">${h[1]?'эффективный':'неэффективный'}${!h[1]&&h[2]?' · '+esc(h[2]):''}</b></div>`).join('');
+  return `
+    <h2>Последний визит · ${dfull(v.d)} ${wday(v.d)}</h2>
+    <div class="grid">
+      <div class="tile"><div class="lab">Эффективный визит</div>
+        <div class="val ${v.eff?'ok':'bad'}">${v.eff?'да':'нет'}</div>
+        <div class="cmp">${v.eff?'все условия договора выполнены':esc(v.why||'условие договора не выполнено')}</div></div>
+      <div class="tile"><div class="lab">Пополнено</div>
+        <div class="val">${f0(v.rf)}<small> пачек</small></div>
+        <div class="cmp">вход ${f0(v.si)} → выход ${f0(v.so)}</div></div>
+      <div class="tile"><div class="lab">Сток на выходе</div>
+        <div class="val ${slCls}">${pct(v.sl)}</div>
+        <div class="cmp">${stockCmp}</div></div>
+      <div class="tile"><div class="lab">AV на выходе</div>
+        <div class="val ${avCls}">${pct(v.av)}</div>
+        <div class="cmp">${avCmp}</div></div>
+      <div class="tile"><div class="lab">Корректность отчётности</div>
+        <div class="val">${yesno(v.ok)}</div>
+        <div class="cmp">${v.chk?'чекер проверил, оценка '+(v.sc==null?'—':nf.format(v.sc)):'чекер не проверял'}</div></div>
+      <div class="tile"><div class="lab">Shop &amp; Shop</div>
+        <div class="val" style="font-size:16px">стикеры ${yesno(v.stk)}</div>
+        <div class="cmp">планограмма: <span class="${REASON_OK[v.plg]||''}">${esc(v.plg||'—')}</span>${v.ss===0?' · оборудования нет':''}</div></div>
+    </div>
+    <h2>Статус визита</h2>
+    <div class="card">
+      <div class="kv"><span>Точка</span><b>${esc(v.st||'—')}</b></div>
+      <div class="kv"><span>Мерчандайзер</span><b>${esc(v.vs||'—')}</b></div>
+      <div class="kv"><span>Данные</span><b class="${v.ph?'ok':'bad'}">${esc(v.ds||'—')}</b></div>
+      <div class="kv"><span>Маршрут</span><b>${esc(v.t||'—')}${v.sv?' · '+esc(v.sv):''}</b></div>
+      <div class="kv"><span>SKU по матрице</span><b>ТСД ${f0(v.stsd)} · вход ${f0(v.sin)} · выход ${f0(v.sout)}</b></div>
+    </div>
+    <h2>${esc(mfull(v.mm||''))} и план</h2>
+    <div class="card">
+      <div class="kv"><span>Визитов за ${esc(mfull(v.mm||'').split(' ')[0])}</span><b>${f0(v.mv)}, эффективных ${f0(v.me)}</b></div>
+      <div class="cmp" style="font-size:13px;margin-top:8px">${planLine}</div>
+    </div>
+    <h2>История визитов${per?' · '+esc(per):''}</h2>
+    <div class="card">${hist||'<div class="cmp">—</div>'}</div>
+    <p class="note">Данные приёмки визитов проекта мерчандайзинга, обновлено ${dlab(VIS.built_at)}.
+      Признаки визита и KPI — расчёт отдела аналитики по проверенной выгрузке подрядчика.</p>`;
+}
+
+boot();
+
+</script>
+</body>
+</html>
