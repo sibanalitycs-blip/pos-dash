@@ -60,6 +60,8 @@ th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
 .form label>select,.form label>input{margin-top:4px;font-weight:400;letter-spacing:0;text-transform:none}
 select:disabled,input:disabled{opacity:.55}
 .hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.navbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+a.chip{text-decoration:none}
 .tabs{display:flex;gap:6px;margin:12px 0 4px}
 .tabs button{flex:1;min-height:40px;border-radius:11px;border:1px solid var(--border);background:var(--surface);
   color:var(--ink2);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
@@ -227,7 +229,7 @@ function screenHome(){
   const ready=!!(S.net&&S.reg&&FILE);
   $('#app').innerHTML=`
     <div class="hdr"><h1>Карточка точки</h1>
-      <button class="chip" id="refresh" title="Перечитать данные с сервера">↻ Обновить дашборд</button></div>
+      <span class="navbtns"><button class="chip" id="refresh" title="Перечитать данные с сервера">↻ Обновить дашборд</button><a class="chip" id="navMenu" href="https://sibanalitycs-blip.github.io/fka-dash/menu.html">☰ Перейти в меню</a></span></div>
     <p class="sub">Регион, сеть — и ищи точку по адресу или коду</p>
     ${S.msg?`<p class="note" style="margin-top:6px">${esc(S.msg)}</p>`:''}
     <div class="form">
@@ -498,8 +500,11 @@ function visitTab(v){
   const stockCmp=v.slk===0?'сток этой сети в KPI не входит':
     v.sl==null?(v.eff?'по ТСД пусто — делить не на что':'считается только по эффективному визиту')
     :`${f0(v.so)} из ${f0(v.tsd)} пачек по ТСД · норма 92 %+`;
-  const avCmp=v.av==null?(v.eff?'по ТСД нет SKU матрицы':'считается только по эффективному визиту')
-    :`${f0(v.sout)} из ${f0(v.stsd)} SKU по матрице · норма 98 %+`;
+  // AV на выходе: до 09.2026 — к SKU матрицы по ТСД, с 09.2026 — к SKU матрицы (решение владельца
+  // 27.09.2026, calc_kpi.av_exit_visit); знаменатель в подписи — тот, которым делили
+  const avNew=(v.d||'')>='2026-09';
+  const avCmp=v.av==null?(v.eff?(avNew?'матрицы по точке нет':'по ТСД нет SKU матрицы'):'считается только по эффективному визиту')
+    :`${f0(v.sout)} из ${f0(avNew?v.sp:v.stsd)} SKU ${avNew?'матрицы':'матрицы по ТСД'} · норма 98 %+`;
   // история: дата — ссылка на свой визит в «Сработаемся» (владелец 14.09.2026), h[4] — id ссылки
   const hist=(v.h||[]).map(h=>{const hu=urlOf(h[4]);
     return `<div class="kv"><span>${hu?`<a href="${esc(hu)}" target="_blank" rel="noopener" style="color:var(--s1);font-weight:600;text-decoration:none">${dfull(h[0])} ↗</a>`:dfull(h[0])} <span style="color:var(--muted)">${wday(h[0])}${h[3]===0?' · без приёмки':''}</span></span>
